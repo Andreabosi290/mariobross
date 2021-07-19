@@ -1,0 +1,3 @@
+Tutte le fixture in box2d hanno un filtro; questo possono essere di 2 tipi:
+-categoria (indica cos'è la fixture, es: mario, brick, coin...)
+-maschera (indica con cosa la fixture può fare collisione)
