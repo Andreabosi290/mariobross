@@ -2,6 +2,7 @@ package com.mario.game.Sprites;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -30,17 +31,20 @@ public class Mario extends Sprite {
     protected TextureRegion bigmariochangingleft;
     protected TextureRegion bigmariochangingright;
     //per animazioni
-    public enum state {FALLING, JUMPING, STANDING,RUNNING,CHANGINGDIRECTIONR,CHANGINGDIRECTIONL,GROWING} ; //enum è un modo per creare una variabile (state) che può assumere solo uno tra i valori tra parentesi
+    public enum state {FALLING, JUMPING, STANDING,RUNNING,CHANGINGDIRECTIONR,CHANGINGDIRECTIONL,GROWING,SHRINKING} ; //enum è un modo per creare una variabile (state) che può assumere solo uno tra i valori tra parentesi
     public state currentState;
     public state previousState; //creo variabili di tipo state (definito sopra) che rappresentano lo stato attuale e quello precedente
     protected Animation<TextureRegion> mariorun;//creo le animazioni per la corsa
     private boolean runningright;
     private float timer;
     protected Animation<TextureRegion> growingAnimation;
+    protected Animation<TextureRegion> shrinkAnimation;
     protected Animation<TextureRegion> bigrunningAnimation;
     public boolean isBig;
     private boolean grow;
+    private boolean shrink;
     private boolean definingbig;
+    private boolean toshrink = false;
 
 
 
@@ -90,6 +94,14 @@ public class Mario extends Sprite {
         grow = false;
         isBig = false;
 
+        frames[0] = new TextureRegion(new TextureRegion(screen.getAtlas().findRegion("big_mario"),16*15,0,16,32));
+        frames[1] = new TextureRegion(bigmarioStanding);
+        frames[2] =  new TextureRegion(new TextureRegion(screen.getAtlas().findRegion("big_mario"),16*15,0,16,32));
+        frames[3] = new TextureRegion(bigmarioStanding);
+        frames[4] =  new TextureRegion(new TextureRegion(screen.getAtlas().findRegion("big_mario"),16*15,0,16,32));
+        shrinkAnimation = new Animation<TextureRegion>(0.2f,frames);
+        shrink = false;
+
     }
     public void toGrow(){
         grow = true;
@@ -100,6 +112,7 @@ public class Mario extends Sprite {
     }
     //update di mario
     public void update(float DeltaTime){
+
         if(isBig)
         {
             setPosition(body.getPosition().x - getWidth()/2,body.getPosition().y - getHeight()/2 - 6/MarioGame.PPM); //abbassiamo un pelo la texture se è grande, cosi sembra che sia a terra
@@ -112,6 +125,10 @@ public class Mario extends Sprite {
         if(definingbig)
         {
             defineBigMario();
+        }
+        if(toshrink){
+            redefinemario();
+            shrink = true;
         }
     }
     //definiamo il body di mario
@@ -151,6 +168,7 @@ public class Mario extends Sprite {
 
         body.createFixture(fixtureDef).setUserData(this);
         //creo la fixture selezionata (head) e uso setUserData che fornisce un nome unico per indicare quella determinata shape
+
     }
 
     //quando mario si ingrandisce, devo modificare il suo body per far si che sia concorde alle texture utilizzate
@@ -187,6 +205,38 @@ public class Mario extends Sprite {
 
         definingbig = false;
     }
+    //creo un nuovo mario piccolo con posizione corrente
+    public void redefinemario(){
+        Vector2 currentposition = body.getPosition();
+        world.destroyBody(body);
+
+        BodyDef bodyDef = new BodyDef();
+        bodyDef.position.set(currentposition.add(0,-10/MarioGame.PPM));
+        bodyDef.type = BodyDef.BodyType.DynamicBody;
+        body = world.createBody(bodyDef);
+
+        FixtureDef fixtureDef = new FixtureDef();
+        CircleShape shape = new CircleShape();
+        shape.setRadius(6.1f/ MarioGame.PPM);
+        fixtureDef.filter.categoryBits = MarioGame.MARIO_BIT;
+        fixtureDef.filter.maskBits = MarioGame.GROUND_BIT | MarioGame.COIN_BIT | MarioGame.BRICK_BIT | MarioGame.OBJECT_BIT | MarioGame.ENEMY_BIT | MarioGame.ENEMY_HEAD_BIT
+                | MarioGame.ITEM_BIT;
+
+        fixtureDef.shape = shape;
+
+        body.createFixture(fixtureDef).setUserData(this);
+
+        EdgeShape head = new EdgeShape();
+        head.set(new Vector2(-2/MarioGame.PPM,6.1f/MarioGame.PPM),new Vector2(2/MarioGame.PPM,6.1f/MarioGame.PPM));
+        fixtureDef.filter.categoryBits = MarioGame.MARIO_HEAD_BIT;
+        fixtureDef.shape = head;
+        fixtureDef.isSensor = true;
+
+        body.createFixture(fixtureDef).setUserData(this);
+
+        toshrink = false;
+
+    }
     //prende il frame usando gli stati, e considera se mario è girato a destra o sinistra
     public TextureRegion getFrame (float delta){
         currentState = getState();
@@ -215,6 +265,12 @@ public class Mario extends Sprite {
                     grow = false;
                 }
                 break;
+            case SHRINKING:
+                region = shrinkAnimation.getKeyFrame(timer);
+                if(shrinkAnimation.isAnimationFinished(timer)){
+                    shrink = false;
+                }
+                break;
 
         }
         if((body.getLinearVelocity().x < 0 || runningright == false) && !region.isFlipX() && region != mariochangingleft && region != mariochangingright && region != bigmariochangingleft && region != bigmariochangingright){
@@ -233,6 +289,10 @@ public class Mario extends Sprite {
     public state getState(){
         if(grow){
             return state.GROWING;
+        }
+        else if(shrink){
+            return state.SHRINKING;
+
         }
         else if(body.getLinearVelocity().y > 0 || (body.getLinearVelocity().y < 0 && previousState == state.JUMPING)  ){
             return state.JUMPING;
@@ -253,5 +313,15 @@ public class Mario extends Sprite {
             return state.RUNNING;
         }
         return state.STANDING;
+    }
+
+    //cosa succede se mario viene colpito da un nemico, ricorda che non puoi fare la modifca del body mentre sta avvenendo la simulazione perchè darebbe dei problemi
+    public void hit(){
+        if(isBig){
+            toshrink = true;
+            isBig = false;
+            setBounds(getX(),getY(),getWidth(),16/MarioGame.PPM);
+            MarioGame.manager.get("audios/sounds/powerdown.wav", Sound.class).play();
+        }
     }
 }

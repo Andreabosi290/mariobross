@@ -99,6 +99,17 @@ public class WorldContactListener implements ContactListener {
                     ((Item) contact.getFixtureB().getUserData()).reverseVelocity(true,false);
                 }
                 break;
+            case MarioGame.ENEMY_BIT | MarioGame.MARIO_BIT: //caso in cui i 2 el sono il nemico e mario
+                if(contact.getFixtureA().getFilterData().categoryBits == MarioGame.ENEMY_BIT)//se fixA è il nemico
+                {
+                    ((Mario) contact.getFixtureB().getUserData()).hit(); //chiamiamo il metodo hit di mario, prima però devo fare il type cast
+                    ((Enemy) contact.getFixtureA().getUserData()).hitOnHead();
+                }
+                else {
+                    ((Mario) contact.getFixtureA().getUserData()).hit();
+                    ((Enemy) contact.getFixtureB().getUserData()).hitOnHead();
+                }
+                break;
 
         }
     }
