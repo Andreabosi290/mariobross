@@ -141,8 +141,11 @@ public class PlayScreen implements Screen {
     }
 
     public void update(float deltaTime){
+
         handleInput(deltaTime);
         SpawningItems();
+
+
 
         world.step(1/60f,6,2);//60 volte al secondo
         //setto le volte,i parametri sono timestep (tempo tra step), una velocita e posizione  di iterazione ( non le usiamo qua, ma servono per un calcolo più preciso delle collisioni, rimbalzi ecc..)
@@ -164,8 +167,11 @@ public class PlayScreen implements Screen {
         }
 
         hud.update(deltaTime);
-        camera.position.x = Math.max(mario.body.getPosition().x,(MarioGame.WORLD_WIDTH/2)/MarioGame.PPM);
 
+        //se mario è morto, la camera sta ferma
+        if(mario.currentState != Mario.state.DEAD) {
+            camera.position.x = Math.max(mario.body.getPosition().x, (MarioGame.WORLD_WIDTH / 2) / MarioGame.PPM);
+        }
 
         //per far funzionare il calcolo della fisica di box2d dobbiamo dire quante volte calcolare al secondo =>
         camera.update();

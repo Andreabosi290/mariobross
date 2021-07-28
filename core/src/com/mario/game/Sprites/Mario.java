@@ -1,7 +1,9 @@
 package com.mario.game.Sprites;
 
+import com.badlogic.gdx.Files;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.Sprite;
@@ -11,6 +13,8 @@ import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.physics.box2d.CircleShape;
 import com.badlogic.gdx.physics.box2d.EdgeShape;
+import com.badlogic.gdx.physics.box2d.Filter;
+import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.World;
 import com.mario.game.MarioGame;
@@ -30,8 +34,9 @@ public class Mario extends Sprite {
     protected TextureRegion bigmarioJump;
     protected TextureRegion bigmariochangingleft;
     protected TextureRegion bigmariochangingright;
+    protected TextureRegion marioDead;
     //per animazioni
-    public enum state {FALLING, JUMPING, STANDING,RUNNING,CHANGINGDIRECTIONR,CHANGINGDIRECTIONL,GROWING,SHRINKING} ; //enum è un modo per creare una variabile (state) che può assumere solo uno tra i valori tra parentesi
+    public enum state {FALLING, JUMPING, STANDING,RUNNING,CHANGINGDIRECTIONR,CHANGINGDIRECTIONL,GROWING,SHRINKING,DEAD} ; //enum è un modo per creare una variabile (state) che può assumere solo uno tra i valori tra parentesi
     public state currentState;
     public state previousState; //creo variabili di tipo state (definito sopra) che rappresentano lo stato attuale e quello precedente
     protected Animation<TextureRegion> mariorun;//creo le animazioni per la corsa
@@ -45,6 +50,7 @@ public class Mario extends Sprite {
     private boolean shrink;
     private boolean definingbig;
     private boolean toshrink = false;
+    private boolean marioisdead = false;
 
 
 
@@ -60,6 +66,7 @@ public class Mario extends Sprite {
         timer = 0;
         runningright = true; //vuol dire che è girato a destra
         mariojump = new TextureRegion(screen.getAtlas().findRegion("little_mario"),16*5,0,16,16);
+        marioDead = new TextureRegion(screen.getAtlas().findRegion("little_mario"),16*6,0,16,16);
         mariochangingleft = new TextureRegion(screen.getAtlas().findRegion("little_mario"),16*4,0,16,16);
         mariochangingright = new TextureRegion(screen.getAtlas().findRegion("little_mario"),16*4,0,16,16);
         mariochangingleft.flip(true,false);
@@ -130,6 +137,7 @@ public class Mario extends Sprite {
             redefinemario();
             shrink = true;
         }
+
     }
     //definiamo il body di mario
     public void defineMario(){
@@ -271,6 +279,9 @@ public class Mario extends Sprite {
                     shrink = false;
                 }
                 break;
+            case DEAD:
+                region = marioDead;
+                break;
 
         }
         if((body.getLinearVelocity().x < 0 || runningright == false) && !region.isFlipX() && region != mariochangingleft && region != mariochangingright && region != bigmariochangingleft && region != bigmariochangingright){
@@ -287,7 +298,10 @@ public class Mario extends Sprite {
     }
     //ritorna lo stato in cui si trova mario
     public state getState(){
-        if(grow){
+        if(marioisdead){
+            return  state.DEAD;
+        }
+        else if(grow){
             return state.GROWING;
         }
         else if(shrink){
@@ -322,6 +336,21 @@ public class Mario extends Sprite {
             isBig = false;
             setBounds(getX(),getY(),getWidth(),16/MarioGame.PPM);
             MarioGame.manager.get("audios/sounds/powerdown.wav", Sound.class).play();
+        }
+        else
+        {
+            marioisdead = true;
+            MarioGame.manager.get("audios/Music/mario_music.ogg", Music.class).stop();
+            MarioGame.manager.get("audios/sounds/mariodeath.wav", Sound.class).play();
+            //voglio far si che quando muore, il body rimane (mi serve per fare l'animazione del saltino pre morte) ma non collide con niente
+            Filter filter = new Filter();
+            filter.maskBits = MarioGame.NOTHING_BIT; // è un bit che è settato a 0, e non collide con nulla
+            for(Fixture fixture : body.getFixtureList())
+            {
+                fixture.setFilterData(filter); // dopo che ho creato un filtro uguale a nulla, per ogni fixture del body (di mario) setto i bit a NOTHING_BIT
+            }
+            body.applyLinearImpulse(new Vector2(0,4f),body.getWorldCenter(),true);
+            //quando crepa, metto una leggera velocità verso l'alto, applicata nel centro del body, e che risveglia eventualmente l'oggetto
         }
     }
 }

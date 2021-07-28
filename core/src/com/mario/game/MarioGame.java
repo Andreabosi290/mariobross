@@ -16,6 +16,7 @@ public class MarioGame extends Game {
 	public static int score = 0;
 
 	//creiamo dei valori di default per i filtri che usiamo (guarda mario e Filters)
+	public static final short NOTHING_BIT = 0;
 	public static final short MARIO_BIT = 2;
 	public static final short BRICK_BIT = 4;
 	public static final short COIN_BIT = 8;
@@ -42,6 +43,7 @@ public class MarioGame extends Game {
 		manager.load("audios/sounds/powerdown.wav", Sound.class);
 		manager.load("audios/sounds/powerupspawn.wav", Sound.class);
 		manager.load("audios/sounds/stomp.wav", Sound.class);
+		manager.load("audios/sounds/mariodeath.wav", Sound.class);
 		manager.finishLoading(); //questo blocca tutto finche non ha caricato gli assets
 
 		setScreen(new PlayScreen(this));
