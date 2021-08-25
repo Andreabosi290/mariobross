@@ -353,4 +353,12 @@ public class Mario extends Sprite {
             //quando crepa, metto una leggera velocità verso l'alto, applicata nel centro del body, e che risveglia eventualmente l'oggetto
         }
     }
+
+    public boolean isDead(){
+        return marioisdead;
+    }
+
+    public float GetStateTimer(){
+        return timer;
+    }
 }

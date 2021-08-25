@@ -87,6 +87,10 @@ public class PlayScreen implements Screen {
         //inizializziamo gli item
         items = new ArrayList<>();
         itemsToAdd = new LinkedList<>();
+        music = MarioGame.manager.get("audios/Music/mario_music.ogg", Music.class);
+        music.setLooping(true);
+        music.setVolume(0.01f);
+        music.play();
     }
 
     public void SpawnItem(ItemDef def){
@@ -134,10 +138,7 @@ public class PlayScreen implements Screen {
             //vengono presi in considerazione durante il calcolo andando quindi a gravare di meno sul peso dell'app
             jumpcooldowncounter = 0.3f;
         }
-        music = MarioGame.manager.get("audios/Music/mario_music.ogg", Music.class);
-        music.setLooping(true);
-        music.setVolume(0.01f);
-        music.play();
+
     }
 
     public void update(float deltaTime){
@@ -213,6 +214,20 @@ public class PlayScreen implements Screen {
         hud.stage.draw();
         // disegna lo stage, e quindi tutto quello che c'è dentro, non serve fare begin della batch
 
+        //se è morto, dopo che sono passati 3 secondi, metto lo schermo di game over
+        if(GameOver()){
+            dispose();
+            game.setScreen(new GameOver(game));
+
+        }
+
+    }
+
+    public boolean GameOver(){
+        if(mario.isDead() && mario.GetStateTimer() > 3){
+            return true;
+        }
+        return false;
     }
 
     @Override
@@ -243,6 +258,7 @@ public class PlayScreen implements Screen {
         world.dispose();
         boxrend.dispose();
         hud.dispose();
+
 
     }
 
